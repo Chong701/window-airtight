@@ -1,68 +1,70 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>门窗专家检测系统</title>
-    <style>
-        :root { --primary: #2563eb; --success: #22c55e; --warn: #f59e0b; --danger: #ef4444; }
-        body { font-family: -apple-system, sans-serif; background: #f0f2f5; margin: 0; display: flex; justify-content: center; padding: 20px; }
-        .app-container { background: white; width: 100%; max-width: 400px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); padding: 24px; }
-        .header { text-align: center; margin-bottom: 24px; }
-        .header h1 { font-size: 1.5rem; color: #1e293b; margin: 0; }
-        .header p { color: #64748b; font-size: 0.9rem; }
+<script>
+    function calculate() {
+        // 获取所有元素
+        const elOutDb = document.getElementById('outDb');
+        const elInDb = document.getElementById('inDb');
+        const elOutT = document.getElementById('outTemp');
+        const elInT = document.getElementById('inTemp');
+        const typeScore = parseInt(document.getElementById('type').value);
+
+        // 检查是否存在空值
+        if (!elOutDb.value || !elInDb.value || !elOutT.value || !elInT.value) {
+            alert("⚠️ 请填写完整数据：分贝和温度都需要输入数值。");
+            return;
+        }
+
+        const outDb = parseFloat(elOutDb.value);
+        const inDb = parseFloat(elInDb.value);
+        const outT = parseFloat(elOutT.value);
+        const inT = parseFloat(elInT.value);
+
+        // 逻辑计算
+        let deltaDb = outDb - inDb;
+        let deltaT = Math.abs(outT - inT);
         
-        .form-item { margin-bottom: 18px; }
-        label { display: block; font-weight: 600; margin-bottom: 8px; color: #334155; font-size: 0.95rem; }
-        select, input { width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 1rem; transition: border 0.3s; box-sizing: border-box; }
-        input:focus { border-color: var(--primary); outline: none; }
+        let noiseScore = (deltaDb / 40) * 60; 
+        let tempDeduction = (deltaT > 15 && deltaDb < 20) ? 15 : 0;
+
+        let finalScore = Math.round(noiseScore + typeScore - tempDeduction);
+        finalScore = Math.max(0, Math.min(100, finalScore));
+
+        // 调用显示弹窗
+        showResult(finalScore, deltaDb, deltaT);
+    }
+
+    function showResult(score, dDb, dT) {
+        const modal = document.getElementById('resultModal');
+        if (!modal) {
+            alert("错误：找不到弹出框组件");
+            return;
+        }
         
-        .temp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        button { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2); }
+        document.getElementById('scoreCircle').innerText = score;
         
-        /* 弹出框样式 */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 100; }
-        .modal-content { background: white; width: 85%; max-width: 320px; padding: 30px; border-radius: 24px; text-align: center; animation: slideUp 0.3s; }
-        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .score-circle { width: 80px; height: 80px; border-radius: 50%; border: 5px solid #eee; line-height: 80px; font-size: 1.8rem; font-weight: bold; margin: 0 auto 15px; }
-        .close-btn { margin-top: 20px; background: #f1f5f9; color: #334155; box-shadow: none; }
-    </style>
-</head>
-<body>
+        let color = score > 80 ? '#22c55e' : (score > 50 ? '#f59e0b' : '#ef4444');
+        document.getElementById('scoreCircle').style.borderColor = color;
+        document.getElementById('scoreCircle').style.color = color;
 
-<div class="app-container">
-    <div class="header">
-        <h1>🏠 门窗体检助手</h1>
-        <p>基于隔音与温差的气密性评估</p>
-    </div>
+        let level = "";
+        let advice = "";
 
-    <div class="form-item">
-        <label>窗户类型</label>
-        <select id="type">
-            <option value="35">断桥铝平开窗</option>
-            <option value="20">塑钢/铝合金推拉窗</option>
-            <option value="10">普通单层玻璃窗</option>
-        </select>
-    </div>
+        if (score > 80) {
+            level = "气密性：优秀";
+            advice = `隔音降噪 ${dDb}分贝，表现完美。`;
+        } else if (score > 50) {
+            level = "气密性：良好";
+            advice = `基本合格，大风天注意观察窗缝。`;
+        } else {
+            level = "气密性：较差";
+            advice = `降噪仅 ${dDb}分贝，建议检查胶条老化情况。`;
+        }
 
-    <div class="form-item">
-        <label>噪音对比 (dB)</label>
-        <div class="temp-grid">
-            <input type="number" id="outDb" placeholder="开窗分贝">
-            <input type="number" id="inDb" placeholder="关窗分贝">
-        </div>
-    </div>
+        document.getElementById('levelText').innerText = level;
+        document.getElementById('adviceText').innerText = advice;
+        modal.style.display = 'flex';
+    }
 
-    <div class="form-item">
-        <label>温度对比 (°C)</label>
-        <div class="temp-grid">
-            <input type="number" id="outTemp" placeholder="室外温度">
-            <input type="number" id="inTemp" placeholder="室内温度">
-        </div>
-    </div>
-
-    <button onclick="calculate()">生成评估报告</button>
-</div>
-
-<div id="resultModal" class="modal">
-    <div class="modal-content">
+    function closeModal() {
+        document.getElementById('resultModal').style.display = 'none';
+    }
+</script>
