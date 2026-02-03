@@ -3,172 +3,204 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>气密性 AI 建模 (中文兼容增强版)</title>
+    <title>气密性 AI 专家分析系统 Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --primary: #2563eb; --bg: #f8fafc; --text: #1e293b; }
-        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); padding: 20px; display: flex; justify-content: center; color: var(--text); }
-        .app-card { background: white; width: 100%; max-width: 500px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding: 30px; }
-        .header { text-align: center; margin-bottom: 25px; }
-        .upload-box { border: 2px dashed #cbd5e1; background: #f1f5f9; padding: 30px; border-radius: 15px; text-align: center; cursor: pointer; margin-bottom: 10px; }
-        .upload-box:hover { border-color: var(--primary); background: #eff6ff; }
+        :root { --primary: #2563eb; --bg: #f1f5f9; --text: #0f172a; }
+        body { font-family: system-ui, sans-serif; background: var(--bg); padding: 20px; color: var(--text); }
+        .container { max-width: 800px; margin: auto; }
+        .card { background: white; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 25px; margin-bottom: 20px; }
         
-        /* 编码修复提示 */
-        #encodingFix { display: none; text-align: center; margin-bottom: 15px; background: #fffbeb; border: 1px solid #fef3c7; padding: 10px; border-radius: 8px; font-size: 0.8rem; color: #92400e; }
-        #encodingFix span { cursor: pointer; text-decoration: underline; color: var(--primary); font-weight: bold; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
 
-        #dynamicForm { margin-top: 20px; padding-top: 20px; border-top: 2px solid #f1f5f9; display: none; }
-        .form-item { margin-bottom: 15px; }
-        label { display: block; font-size: 0.85rem; font-weight: 600; color: #64748b; margin-bottom: 6px; }
-        input { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 1rem; box-sizing: border-box; }
-        .btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 1rem; }
-        .data-info { font-size: 0.75rem; background: #ecfdf5; color: #065f46; padding: 12px; border-radius: 8px; margin-bottom: 15px; display: none; line-height: 1.4; }
-        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; backdrop-filter: blur(4px); }
-        .modal-content { background:white; padding:30px; border-radius:24px; width:85%; max-width:320px; text-align:center; }
-        .close-btn { background: #f1f5f9; color: var(--text); border: none; padding: 12px 30px; border-radius: 10px; margin-top: 20px; cursor: pointer; font-weight: bold; }
+        .upload-box { border: 2px dashed #cbd5e1; background: #f8fafc; padding: 20px; border-radius: 12px; text-align: center; cursor: pointer; }
+        .btn { padding: 12px 20px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
+        
+        /* 历史表格 */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
+        th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
+        th { background: #f8fafc; color: #64748b; }
+
+        /* 弹窗报告 */
+        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); align-items:center; justify-content:center; }
+        .report-box { background:white; width:90%; max-width:500px; padding:40px; border-radius:15px; position:relative; }
+        .report-header { border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-bottom: 20px; text-align: center; }
+        
+        #encodingFix { display:none; background:#fffbeb; padding:10px; border-radius:8px; font-size:0.8rem; margin:10px 0; cursor:pointer; text-decoration:underline; }
     </style>
 </head>
 <body>
 
-<div class="app-card">
-    <div class="header">
-        <h1>🧠 气密性 AI 建模</h1>
-        <p>CSV 导入与自动化表单生成</p>
+<div class="container">
+    <div class="card header" style="text-align: center;">
+        <h1 style="margin:0">🏠 气密性 AI 专家系统 Pro</h1>
+        <p style="color: #64748b;">大数据建模 · 智能预测 · 自动报告</p>
     </div>
 
-    <div class="upload-box" onclick="document.getElementById('fileIn').click()">
-        <div id="status">点击上传 CSV 数据文件</div>
-        <input type="file" id="fileIn" accept=".csv" style="display:none">
+    <div class="grid">
+        <div class="card">
+            <div class="upload-box" onclick="document.getElementById('fileIn').click()">
+                <div id="status">点击导入历史 CSV 数据</div>
+                <input type="file" id="fileIn" accept=".csv" style="display:none">
+            </div>
+            <div id="encodingFix" onclick="reloadWithEncoding('GBK')">⚠️ 中文乱码？尝试 GBK 重新加载</div>
+            
+            <div id="dynamicForm" style="display:none; margin-top:20px;">
+                <div id="inputsContainer"></div>
+                <button class="btn" onclick="predict()">执行智能预测</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-top:0; font-size:1rem;">历史数据分布图</h3>
+            <canvas id="dataChart"></canvas>
+        </div>
     </div>
 
-    <div id="encodingFix">如果中文显示乱码，请尝试 <span onclick="reloadWithEncoding('GBK')">使用 GBK 重新加载</span></div>
-
-    <div id="dataTag" class="data-info"></div>
-
-    <div id="dynamicForm">
-        <h3 style="font-size: 1rem; margin-bottom: 15px;">输入预测参数</h3>
-        <div id="inputsContainer"></div>
-        <button class="btn" onclick="predict()">开始智能预测</button>
+    <div class="card">
+        <h3 style="margin-top:0">📑 预测历史存证</h3>
+        <div style="overflow-x: auto;">
+            <table id="historyTable">
+                <thead><tr id="tableHeader"><th>时间</th><th>结果</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
     </div>
 </div>
 
-<div id="resModal" class="modal">
-    <div class="modal-content">
-        <div style="font-size: 0.9rem; color: #64748b;">预测目标结果：</div>
-        <div id="resTargetLabel" style="font-weight: bold; margin-bottom: 10px; color: #1e293b;"></div>
-        <div id="resVal" style="font-size: 2.5rem; font-weight: bold; color: var(--primary); margin: 10px 0;">0.00</div>
-        <button class="close-btn" onclick="closeModal()">返回</button>
+<div id="reportModal" class="modal">
+    <div class="report-box" id="printableReport">
+        <div class="report-header">
+            <h2>检测报告单</h2>
+            <small>REPORT OF AIRTIGHTNESS PREDICTION</small>
+        </div>
+        <div id="reportContent" style="line-height: 2;"></div>
+        <div style="margin-top:30px; border-top:1px solid #eee; padding-top:10px; font-size:0.8rem; color:#94a3b8;">
+            * 本报告基于大数据相似度算法生成，仅供工程参考。
+        </div>
+        <button class="btn" onclick="window.print()" style="background:#0f172a">打印 / 导出 PDF</button>
+        <button class="btn" style="background:#eee; color:#334155" onclick="closeModal()">关闭</button>
     </div>
 </div>
 
 <script>
-    let headers = [];
-    let csvRows = [];
-    let currentFile = null;
+    let headers = [], csvRows = [], currentFile = null, chart = null;
 
-    document.getElementById('fileIn').addEventListener('change', function(e) {
+    // --- 文件读取 ---
+    document.getElementById('fileIn').addEventListener('change', e => {
         currentFile = e.target.files[0];
-        if (currentFile) {
-            // 默认先用 UTF-8 尝试读取
-            reloadWithEncoding('UTF-8');
-        }
+        reloadWithEncoding('UTF-8');
     });
 
-    function reloadWithEncoding(encoding) {
-        if (!currentFile) return;
+    function reloadWithEncoding(enc) {
         const reader = new FileReader();
-        
-        reader.onload = function(event) {
-            const text = event.target.result;
-            
-            // 检查解码后是否包含明显的乱码字符 ()
-            if (text.includes('') && encoding === 'UTF-8') {
-                // 如果发现乱码，自动尝试用 GBK 重新解码一次
-                reloadWithEncoding('GBK');
-                return;
-            }
-
+        reader.onload = e => {
+            const text = e.target.result;
+            if (text.includes('') && enc === 'UTF-8') { reloadWithEncoding('GBK'); return; }
             processCSV(text);
-            // 显示/隐藏修复按钮
-            document.getElementById('encodingFix').style.display = (encoding === 'UTF-8') ? 'block' : 'none';
+            document.getElementById('encodingFix').style.display = (enc === 'UTF-8') ? 'block' : 'none';
         };
-
-        reader.readAsText(currentFile, encoding);
+        reader.readAsText(currentFile, enc);
     }
 
     function processCSV(text) {
-        const allLines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
-        if (allLines.length < 2) return;
-
-        // 清洗表头并去除引号
-        headers = allLines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-        csvRows = allLines.slice(1).map(row => row.split(',').map(v => v.trim()));
-
-        generateForm();
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+        headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+        csvRows = lines.slice(1).map(r => r.split(',').map(v => v.trim()));
+        
+        initChart(); // 初始化图表
+        generateForm(); // 生成表单
     }
 
-    function generateForm() {
-        const container = document.getElementById('inputsContainer');
-        const tag = document.getElementById('dataTag');
-        container.innerHTML = ''; 
+    // --- 功能 B：数据可视化 ---
+    function initChart() {
+        const ctx = document.getElementById('dataChart').getContext('2d');
+        if (chart) chart.destroy();
         
-        // 跳过第一列序号，跳过最后一列结果
-        const startIndex = 1;
-        const endIndex = headers.length - 2;
-
-        for (let i = startIndex; i <= endIndex; i++) {
-            const div = document.createElement('div');
-            div.className = 'form-item';
-            div.innerHTML = `
-                <label>${headers[i]}</label>
-                <input type="number" class="dynamic-input" data-index="${i}" step="any" placeholder="请输入数值">
-            `;
-            container.appendChild(div);
-        }
-
-        tag.style.display = 'block';
-        tag.innerHTML = `<b>✅ 数据解析成功</b><br>预测目标：${headers[headers.length-1]}`;
-        document.getElementById('dynamicForm').style.display = 'block';
-        document.getElementById('status').innerText = "文件解析成功";
-    }
-
-    function predict() {
-        const inputs = document.getElementsByClassName('dynamic-input');
-        let userInputs = {};
+        // 提取 缝长(x) 和 结果(y)
+        const chartData = csvRows.map(r => ({ x: parseFloat(r[1]), y: parseFloat(r[r.length-1]) }));
         
-        for (let input of inputs) {
-            const idx = input.getAttribute('data-index');
-            const val = parseFloat(input.value);
-            if (isNaN(val)) { alert(`请输入 ${headers[idx]}`); return; }
-            userInputs[idx] = val;
-        }
-
-        let totalWeightedResult = 0;
-        let totalSimilarity = 0;
-
-        csvRows.forEach(row => {
-            let diffSum = 0;
-            for (let idx in userInputs) {
-                const rowVal = parseFloat(row[idx]);
-                const diff = (rowVal - userInputs[idx]) / (userInputs[idx] || 1);
-                diffSum += Math.pow(diff, 2);
-            }
-            
-            let similarity = 1 / (Math.sqrt(diffSum) + 0.0001); 
-            const targetVal = parseFloat(row[row.length - 1]);
-            
-            if(!isNaN(targetVal)) {
-                totalWeightedResult += targetVal * similarity;
-                totalSimilarity += similarity;
+        chart = new Chart(ctx, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: '历史数据分布',
+                    data: chartData,
+                    backgroundColor: '#2563eb'
+                }]
+            },
+            options: {
+                scales: { 
+                    x: { title: { display: true, text: '缝长 (mm)' } },
+                    y: { title: { display: true, text: '渗透量' } }
+                }
             }
         });
-
-        const finalVal = (totalWeightedResult / totalSimilarity).toFixed(4);
-        document.getElementById('resVal').innerText = finalVal;
-        document.getElementById('resTargetLabel').innerText = headers[headers.length - 1];
-        document.getElementById('resModal').style.display = 'flex';
     }
 
-    function closeModal() { document.getElementById('resModal').style.display = 'none'; }
+    // --- 生成表单 ---
+    function generateForm() {
+        const container = document.getElementById('inputsContainer');
+        container.innerHTML = '';
+        for (let i = 1; i < headers.length - 1; i++) {
+            container.innerHTML += `<div style="margin-bottom:10px">
+                <label style="font-size:0.8rem; font-weight:bold">${headers[i]}</label>
+                <input type="number" class="dynamic-input" data-idx="${i}" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:5px;">
+            </div>`;
+        }
+        document.getElementById('dynamicForm').style.display = 'block';
+        document.getElementById('status').innerText = "✅ 数据建模已完成";
+
+        // 更新历史表格表头
+        const headRow = document.getElementById('tableHeader');
+        headRow.innerHTML = '<th>时间</th>' + headers.slice(1, -1).map(h => `<th>${h}</th>`).join('') + `<th>预测结果</th>`;
+    }
+
+    // --- 功能 A & C：预测与报告 ---
+    function predict() {
+        const inputs = document.getElementsByClassName('dynamic-input');
+        let userInputs = {}, paramsText = "";
+        
+        for (let input of inputs) {
+            const idx = input.getAttribute('data-idx');
+            const val = parseFloat(input.value);
+            if (isNaN(val)) return alert("请完整填写");
+            userInputs[idx] = val;
+            paramsText += `<p><b>${headers[idx]}：</b>${val}</p>`;
+        }
+
+        // 算法计算
+        let totalW = 0, totalS = 0;
+        csvRows.forEach(row => {
+            let d = 0;
+            for (let idx in userInputs) d += Math.pow((row[idx] - userInputs[idx]) / userInputs[idx], 2);
+            let sim = 1 / (Math.sqrt(d) + 0.001);
+            totalW += row[row.length - 1] * sim;
+            totalS += sim;
+        });
+
+        const result = (totalW / totalS).toFixed(4);
+
+        // 保存到历史记录表格
+        const now = new Date().toLocaleTimeString();
+        let rowHtml = `<tr><td>${now}</td>`;
+        for (let idx in userInputs) rowHtml += `<td>${userInputs[idx]}</td>`;
+        rowHtml += `<td style="color:var(--primary); font-weight:bold">${result}</td></tr>`;
+        document.querySelector('#historyTable tbody').insertAdjacentHTML('afterbegin', rowHtml);
+
+        // 生成报告内容
+        document.getElementById('reportContent').innerHTML = `
+            ${paramsText}
+            <div style="background:#f8fafc; padding:20px; border-radius:10px; margin-top:20px; text-align:center">
+                <span style="font-size:1rem; color:#64748b">AI 预测结果 (${headers[headers.length-1]})</span>
+                <div style="font-size:3rem; font-weight:bold; color:var(--primary)">${result}</div>
+            </div>
+        `;
+        document.getElementById('reportModal').style.display = 'flex';
+    }
+
+    function closeModal() { document.getElementById('reportModal').style.display = 'none'; }
 </script>
 
 </body>
