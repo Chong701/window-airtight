@@ -3,14 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>气密性 AI 建模 (支持中文版)</title>
+    <title>气密性 AI 建模 (中文兼容增强版)</title>
     <style>
         :root { --primary: #2563eb; --bg: #f8fafc; --text: #1e293b; }
         body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); padding: 20px; display: flex; justify-content: center; color: var(--text); }
         .app-card { background: white; width: 100%; max-width: 500px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding: 30px; }
         .header { text-align: center; margin-bottom: 25px; }
-        .upload-box { border: 2px dashed #cbd5e1; background: #f1f5f9; padding: 30px; border-radius: 15px; text-align: center; cursor: pointer; margin-bottom: 20px; }
+        .upload-box { border: 2px dashed #cbd5e1; background: #f1f5f9; padding: 30px; border-radius: 15px; text-align: center; cursor: pointer; margin-bottom: 10px; }
         .upload-box:hover { border-color: var(--primary); background: #eff6ff; }
+        
+        /* 编码修复提示 */
+        #encodingFix { display: none; text-align: center; margin-bottom: 15px; background: #fffbeb; border: 1px solid #fef3c7; padding: 10px; border-radius: 8px; font-size: 0.8rem; color: #92400e; }
+        #encodingFix span { cursor: pointer; text-decoration: underline; color: var(--primary); font-weight: bold; }
+
         #dynamicForm { margin-top: 20px; padding-top: 20px; border-top: 2px solid #f1f5f9; display: none; }
         .form-item { margin-bottom: 15px; }
         label { display: block; font-size: 0.85rem; font-weight: 600; color: #64748b; margin-bottom: 6px; }
@@ -27,27 +32,29 @@
 <div class="app-card">
     <div class="header">
         <h1>🧠 气密性 AI 建模</h1>
-        <p>支持中文 CSV 数据导入</p>
+        <p>CSV 导入与自动化表单生成</p>
     </div>
 
     <div class="upload-box" onclick="document.getElementById('fileIn').click()">
-        <div id="status">点击上传 CSV (支持中文)</div>
+        <div id="status">点击上传 CSV 数据文件</div>
         <input type="file" id="fileIn" accept=".csv" style="display:none">
     </div>
+
+    <div id="encodingFix">如果中文显示乱码，请尝试 <span onclick="reloadWithEncoding('GBK')">使用 GBK 重新加载</span></div>
 
     <div id="dataTag" class="data-info"></div>
 
     <div id="dynamicForm">
-        <h3 style="font-size: 1rem; margin-bottom: 15px;">输入待预测参数</h3>
+        <h3 style="font-size: 1rem; margin-bottom: 15px;">输入预测参数</h3>
         <div id="inputsContainer"></div>
-        <button class="btn" onclick="predict()">基于大数据精准预测</button>
+        <button class="btn" onclick="predict()">开始智能预测</button>
     </div>
 </div>
 
 <div id="resModal" class="modal">
     <div class="modal-content">
-        <div style="font-size: 0.9rem; color: #64748b;">AI 预测目标：</div>
-        <div id="resTargetLabel" style="font-weight: bold; margin-bottom: 10px;"></div>
+        <div style="font-size: 0.9rem; color: #64748b;">预测目标结果：</div>
+        <div id="resTargetLabel" style="font-weight: bold; margin-bottom: 10px; color: #1e293b;"></div>
         <div id="resVal" style="font-size: 2.5rem; font-weight: bold; color: var(--primary); margin: 10px 0;">0.00</div>
         <button class="close-btn" onclick="closeModal()">返回</button>
     </div>
@@ -56,50 +63,55 @@
 <script>
     let headers = [];
     let csvRows = [];
+    let currentFile = null;
 
     document.getElementById('fileIn').addEventListener('change', function(e) {
-        const file = e.target.files[0];
+        currentFile = e.target.files[0];
+        if (currentFile) {
+            // 默认先用 UTF-8 尝试读取
+            reloadWithEncoding('UTF-8');
+        }
+    });
+
+    function reloadWithEncoding(encoding) {
+        if (!currentFile) return;
         const reader = new FileReader();
         
-        // --- 解决乱码的核心：以 ArrayBuffer 方式读取 ---
-        reader.readAsArrayBuffer(file);
-        
         reader.onload = function(event) {
-            const buffer = event.target.result;
+            const text = event.target.result;
             
-            // 尝试用 UTF-8 解码
-            let decoder = new TextDecoder('utf-8');
-            let text = decoder.decode(new Uint8Array(buffer));
-            
-            // 检查是否包含乱码特征（如果解码失败通常会出现特殊符号）
-            // 或者直接尝试 GBK 解码（因为 Excel 默认导出 GBK）
-            if (text.includes('')) {
-                decoder = new TextDecoder('gbk');
-                text = decoder.decode(new Uint8Array(buffer));
+            // 检查解码后是否包含明显的乱码字符 ()
+            if (text.includes('') && encoding === 'UTF-8') {
+                // 如果发现乱码，自动尝试用 GBK 重新解码一次
+                reloadWithEncoding('GBK');
+                return;
             }
 
-            const allLines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
-            
-            if (allLines.length < 2) { alert("文件数据不足"); return; }
-
-            // 解析表头
-            headers = allLines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-            
-            // 解析数据
-            csvRows = allLines.slice(1).map(row => {
-                return row.split(',').map(v => v.trim()); // 先保留字符串，计算时转数字
-            });
-
-            generateForm();
+            processCSV(text);
+            // 显示/隐藏修复按钮
+            document.getElementById('encodingFix').style.display = (encoding === 'UTF-8') ? 'block' : 'none';
         };
-    });
+
+        reader.readAsText(currentFile, encoding);
+    }
+
+    function processCSV(text) {
+        const allLines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
+        if (allLines.length < 2) return;
+
+        // 清洗表头并去除引号
+        headers = allLines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+        csvRows = allLines.slice(1).map(row => row.split(',').map(v => v.trim()));
+
+        generateForm();
+    }
 
     function generateForm() {
         const container = document.getElementById('inputsContainer');
         const tag = document.getElementById('dataTag');
         container.innerHTML = ''; 
         
-        // 自动识别：跳过第一列(序号)，跳过最后一列(结果)
+        // 跳过第一列序号，跳过最后一列结果
         const startIndex = 1;
         const endIndex = headers.length - 2;
 
@@ -107,18 +119,16 @@
             const div = document.createElement('div');
             div.className = 'form-item';
             div.innerHTML = `
-                <label>输入参数：${headers[i]}</label>
+                <label>${headers[i]}</label>
                 <input type="number" class="dynamic-input" data-index="${i}" step="any" placeholder="请输入数值">
             `;
             container.appendChild(div);
         }
 
-        const targetName = headers[headers.length - 1];
         tag.style.display = 'block';
-        tag.innerHTML = `<b>✅ 数据解析成功</b><br>预测目标：${targetName}`;
-        
+        tag.innerHTML = `<b>✅ 数据解析成功</b><br>预测目标：${headers[headers.length-1]}`;
         document.getElementById('dynamicForm').style.display = 'block';
-        document.getElementById('status').innerText = "文件已加载";
+        document.getElementById('status').innerText = "文件解析成功";
     }
 
     function predict() {
@@ -128,7 +138,7 @@
         for (let input of inputs) {
             const idx = input.getAttribute('data-index');
             const val = parseFloat(input.value);
-            if (isNaN(val)) { alert(`请输入${headers[idx]}`); return; }
+            if (isNaN(val)) { alert(`请输入 ${headers[idx]}`); return; }
             userInputs[idx] = val;
         }
 
