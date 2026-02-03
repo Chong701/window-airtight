@@ -3,66 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>气密性 AI 专家分析系统 Pro</title>
+    <title>气密性 AI 专家系统 Pro+ (多维图表版)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --primary: #2563eb; --bg: #f1f5f9; --text: #0f172a; }
         body { font-family: system-ui, sans-serif; background: var(--bg); padding: 20px; color: var(--text); }
-        .container { max-width: 800px; margin: auto; }
+        .container { max-width: 900px; margin: auto; }
         .card { background: white; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 25px; margin-bottom: 20px; }
-        
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+        .grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 20px; }
+        @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
 
         .upload-box { border: 2px dashed #cbd5e1; background: #f8fafc; padding: 20px; border-radius: 12px; text-align: center; cursor: pointer; }
         .btn { padding: 12px 20px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
         
-        /* 历史表格 */
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
         th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
         th { background: #f8fafc; color: #64748b; }
 
-        /* 弹窗报告 */
-        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); align-items:center; justify-content:center; }
-        .report-box { background:white; width:90%; max-width:500px; padding:40px; border-radius:15px; position:relative; }
-        .report-header { border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-bottom: 20px; text-align: center; }
+        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); align-items:center; justify-content:center; z-index: 100; }
+        .report-box { background:white; width:90%; max-width:500px; padding:40px; border-radius:15px; }
         
-        #encodingFix { display:none; background:#fffbeb; padding:10px; border-radius:8px; font-size:0.8rem; margin:10px 0; cursor:pointer; text-decoration:underline; }
+        select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="card header" style="text-align: center;">
-        <h1 style="margin:0">🏠 气密性 AI 专家系统 Pro</h1>
-        <p style="color: #64748b;">大数据建模 · 智能预测 · 自动报告</p>
+    <div class="card" style="text-align: center;">
+        <h1 style="margin:0">🏠 气密性 AI 专家系统 Pro+</h1>
+        <p style="color: #64748b;">支持多维散点矩阵分析 · 自动编码修复</p>
     </div>
 
     <div class="grid">
         <div class="card">
             <div class="upload-box" onclick="document.getElementById('fileIn').click()">
-                <div id="status">点击导入历史 CSV 数据</div>
+                <div id="status">点击导入 CSV 数据</div>
                 <input type="file" id="fileIn" accept=".csv" style="display:none">
             </div>
-            <div id="encodingFix" onclick="reloadWithEncoding('GBK')">⚠️ 中文乱码？尝试 GBK 重新加载</div>
             
             <div id="dynamicForm" style="display:none; margin-top:20px;">
+                <h4 style="margin-bottom:10px">智能预测输入：</h4>
                 <div id="inputsContainer"></div>
                 <button class="btn" onclick="predict()">执行智能预测</button>
             </div>
         </div>
 
         <div class="card">
-            <h3 style="margin-top:0; font-size:1rem;">历史数据分布图</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin:0; font-size:1rem;">多维关联性分析</h3>
+                <select id="chartDimSelector" style="width: auto; margin: 0;" onchange="updateChart()">
+                    <option value="">等待数据导入...</option>
+                </select>
+            </div>
             <canvas id="dataChart"></canvas>
         </div>
     </div>
 
     <div class="card">
-        <h3 style="margin-top:0">📑 预测历史存证</h3>
+        <h3>📑 预测历史记录</h3>
         <div style="overflow-x: auto;">
             <table id="historyTable">
-                <thead><tr id="tableHeader"><th>时间</th><th>结果</th></tr></thead>
+                <thead><tr id="tableHeader"><th>时间</th><th>预测结果</th></tr></thead>
                 <tbody></tbody>
             </table>
         </div>
@@ -70,133 +71,148 @@
 </div>
 
 <div id="reportModal" class="modal">
-    <div class="report-box" id="printableReport">
-        <div class="report-header">
-            <h2>检测报告单</h2>
-            <small>REPORT OF AIRTIGHTNESS PREDICTION</small>
+    <div class="report-box">
+        <div style="text-align:center; border-bottom:2px solid var(--primary); margin-bottom:20px;">
+            <h2>检测预测报告</h2>
         </div>
         <div id="reportContent" style="line-height: 2;"></div>
-        <div style="margin-top:30px; border-top:1px solid #eee; padding-top:10px; font-size:0.8rem; color:#94a3b8;">
-            * 本报告基于大数据相似度算法生成，仅供工程参考。
-        </div>
-        <button class="btn" onclick="window.print()" style="background:#0f172a">打印 / 导出 PDF</button>
+        <button class="btn" onclick="window.print()">打印报告 / 保存 PDF</button>
         <button class="btn" style="background:#eee; color:#334155" onclick="closeModal()">关闭</button>
     </div>
 </div>
 
 <script>
-    let headers = [], csvRows = [], currentFile = null, chart = null;
+    let headers = [], csvRows = [], chart = null;
 
-    // --- 文件读取 ---
     document.getElementById('fileIn').addEventListener('change', e => {
-        currentFile = e.target.files[0];
-        reloadWithEncoding('UTF-8');
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = event => {
+            const text = event.target.result;
+            // 自动处理乱码尝试
+            const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
+            headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+            csvRows = lines.slice(1).map(r => r.split(',').map(v => v.trim()));
+            
+            setupDimensionSelector();
+            generateForm();
+            updateChart();
+        };
+        // 默认尝试 GBK 以适配 Excel 中文
+        reader.readAsText(file, 'GBK');
     });
 
-    function reloadWithEncoding(enc) {
-        const reader = new FileReader();
-        reader.onload = e => {
-            const text = e.target.result;
-            if (text.includes('') && enc === 'UTF-8') { reloadWithEncoding('GBK'); return; }
-            processCSV(text);
-            document.getElementById('encodingFix').style.display = (enc === 'UTF-8') ? 'block' : 'none';
-        };
-        reader.readAsText(currentFile, enc);
+    // 初始化维度切换下拉框
+    function setupDimensionSelector() {
+        const selector = document.getElementById('chartDimSelector');
+        selector.innerHTML = '';
+        // 提取所有特征维度（排除序号和最后一列结果）
+        for (let i = 1; i < headers.length - 1; i++) {
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.innerText = `查看关系：${headers[i]} vs 结果`;
+            selector.appendChild(opt);
+        }
     }
 
-    function processCSV(text) {
-        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
-        headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-        csvRows = lines.slice(1).map(r => r.split(',').map(v => v.trim()));
-        
-        initChart(); // 初始化图表
-        generateForm(); // 生成表单
-    }
+    // 更新图表逻辑
+    function updateChart() {
+        const selector = document.getElementById('chartDimSelector');
+        const selectedIdx = parseInt(selector.value);
+        if (isNaN(selectedIdx)) return;
 
-    // --- 功能 B：数据可视化 ---
-    function initChart() {
         const ctx = document.getElementById('dataChart').getContext('2d');
         if (chart) chart.destroy();
-        
-        // 提取 缝长(x) 和 结果(y)
-        const chartData = csvRows.map(r => ({ x: parseFloat(r[1]), y: parseFloat(r[r.length-1]) }));
-        
+
+        // 提取选中列与结果列的数据点
+        const scatterData = csvRows.map(row => ({
+            x: parseFloat(row[selectedIdx]),
+            y: parseFloat(row[row.length - 1])
+        })).filter(p => !isNaN(p.x) && !isNaN(p.y));
+
         chart = new Chart(ctx, {
             type: 'scatter',
             data: {
                 datasets: [{
-                    label: '历史数据分布',
-                    data: chartData,
-                    backgroundColor: '#2563eb'
+                    label: `${headers[selectedIdx]} 相关性分布`,
+                    data: scatterData,
+                    backgroundColor: 'rgba(37, 99, 235, 0.7)',
+                    borderColor: 'rgba(37, 99, 235, 1)',
+                    borderWidth: 1
                 }]
             },
             options: {
-                scales: { 
-                    x: { title: { display: true, text: '缝长 (mm)' } },
-                    y: { title: { display: true, text: '渗透量' } }
+                responsive: true,
+                scales: {
+                    x: { title: { display: true, text: headers[selectedIdx] } },
+                    y: { title: { display: true, text: headers[headers.length-1] } }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => `参数: ${ctx.parsed.x}, 结果: ${ctx.parsed.y}`
+                        }
+                    }
                 }
             }
         });
     }
 
-    // --- 生成表单 ---
     function generateForm() {
         const container = document.getElementById('inputsContainer');
         container.innerHTML = '';
         for (let i = 1; i < headers.length - 1; i++) {
-            container.innerHTML += `<div style="margin-bottom:10px">
-                <label style="font-size:0.8rem; font-weight:bold">${headers[i]}</label>
-                <input type="number" class="dynamic-input" data-idx="${i}" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:5px;">
+            container.innerHTML += `<div style="margin-bottom:12px">
+                <label style="font-size:0.85rem; font-weight:bold">${headers[i]}</label>
+                <input type="number" class="dynamic-input" data-idx="${i}" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box">
             </div>`;
         }
         document.getElementById('dynamicForm').style.display = 'block';
-        document.getElementById('status').innerText = "✅ 数据建模已完成";
+        document.getElementById('status').innerText = "✅ 数据分析已完成";
 
-        // 更新历史表格表头
+        // 更新历史表头
         const headRow = document.getElementById('tableHeader');
         headRow.innerHTML = '<th>时间</th>' + headers.slice(1, -1).map(h => `<th>${h}</th>`).join('') + `<th>预测结果</th>`;
     }
 
-    // --- 功能 A & C：预测与报告 ---
     function predict() {
         const inputs = document.getElementsByClassName('dynamic-input');
-        let userInputs = {}, paramsText = "";
+        let userInputs = {}, reportHtml = "";
         
         for (let input of inputs) {
             const idx = input.getAttribute('data-idx');
             const val = parseFloat(input.value);
-            if (isNaN(val)) return alert("请完整填写");
+            if (isNaN(val)) return alert("请完整输入数据");
             userInputs[idx] = val;
-            paramsText += `<p><b>${headers[idx]}：</b>${val}</p>`;
+            reportHtml += `<p><b>${headers[idx]}：</b>${val}</p>`;
         }
 
-        // 算法计算
+        // AI 加权算法
         let totalW = 0, totalS = 0;
         csvRows.forEach(row => {
-            let d = 0;
-            for (let idx in userInputs) d += Math.pow((row[idx] - userInputs[idx]) / userInputs[idx], 2);
-            let sim = 1 / (Math.sqrt(d) + 0.001);
-            totalW += row[row.length - 1] * sim;
+            let dist = 0;
+            for (let idx in userInputs) {
+                dist += Math.pow((parseFloat(row[idx]) - userInputs[idx]) / (userInputs[idx] || 1), 2);
+            }
+            let sim = 1 / (Math.sqrt(dist) + 0.0001);
+            totalW += parseFloat(row[row.length - 1]) * sim;
             totalS += sim;
         });
 
         const result = (totalW / totalS).toFixed(4);
 
-        // 保存到历史记录表格
-        const now = new Date().toLocaleTimeString();
-        let rowHtml = `<tr><td>${now}</td>`;
-        for (let idx in userInputs) rowHtml += `<td>${userInputs[idx]}</td>`;
-        rowHtml += `<td style="color:var(--primary); font-weight:bold">${result}</td></tr>`;
-        document.querySelector('#historyTable tbody').insertAdjacentHTML('afterbegin', rowHtml);
+        // 插入记录
+        const row = `<tr><td>${new Date().toLocaleTimeString()}</td>` + 
+                    Object.values(userInputs).map(v => `<td>${v}</td>`).join('') + 
+                    `<td style="font-weight:bold; color:var(--primary)">${result}</td></tr>`;
+        document.querySelector('#historyTable tbody').insertAdjacentHTML('afterbegin', row);
 
-        // 生成报告内容
-        document.getElementById('reportContent').innerHTML = `
-            ${paramsText}
-            <div style="background:#f8fafc; padding:20px; border-radius:10px; margin-top:20px; text-align:center">
-                <span style="font-size:1rem; color:#64748b">AI 预测结果 (${headers[headers.length-1]})</span>
-                <div style="font-size:3rem; font-weight:bold; color:var(--primary)">${result}</div>
-            </div>
-        `;
+        // 显示报告
+        document.getElementById('reportContent').innerHTML = reportHtml + `
+            <div style="background:#f8fafc; padding:20px; border-radius:12px; margin-top:20px; text-align:center">
+                <div style="color:#64748b; font-size:0.9rem">预测：${headers[headers.length-1]}</div>
+                <div style="font-size:2.5rem; font-weight:bold; color:var(--primary)">${result}</div>
+            </div>`;
         document.getElementById('reportModal').style.display = 'flex';
     }
 
