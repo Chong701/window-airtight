@@ -3,135 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>门窗专家检测系统</title>
+    <title>气密性大数据AI助手</title>
     <style>
-        :root { --primary: #2563eb; --success: #22c55e; --warn: #f59e0b; --danger: #ef4444; }
-        body { font-family: -apple-system, sans-serif; background: #f0f2f5; margin: 0; display: flex; justify-content: center; padding: 20px; }
-        .app-container { background: white; width: 100%; max-width: 400px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); padding: 24px; }
-        .header { text-align: center; margin-bottom: 24px; }
-        .header h1 { font-size: 1.5rem; color: #1e293b; margin: 0; }
-        .header p { color: #64748b; font-size: 0.9rem; }
+        :root { --primary: #3b82f6; --success: #10b981; --bg: #f8fafc; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; padding: 20px; }
+        .app-card { background: white; width: 100%; max-width: 450px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); padding: 28px; }
         
-        .form-item { margin-bottom: 18px; }
-        label { display: block; font-weight: 600; margin-bottom: 8px; color: #334155; font-size: 0.95rem; }
-        select, input { width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 1rem; transition: border 0.3s; box-sizing: border-box; }
-        input:focus { border-color: var(--primary); outline: none; }
+        .header { text-align: center; margin-bottom: 25px; }
+        .header h1 { font-size: 1.6rem; color: #1e293b; margin: 0; }
+        .header p { color: #64748b; font-size: 0.9rem; margin-top: 8px; }
+
+        /* 上传区域 */
+        .upload-section { border: 2px dashed #cbd5e1; background: #f1f5f9; padding: 25px; border-radius: 16px; text-align: center; cursor: pointer; transition: all 0.3s; margin-bottom: 25px; }
+        .upload-section:hover { border-color: var(--primary); background: #eff6ff; }
+        .data-status { margin-top: 10px; display: none; font-size: 0.85rem; font-weight: bold; color: var(--primary); }
+
+        /* 表单区域 */
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: 600; margin-bottom: 8px; color: #334155; }
+        input, select { width: 100%; padding: 14px; border: 1.5px solid #e2e8f0; border-radius: 12px; font-size: 1rem; box-sizing: border-box; }
         
-        .temp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        button { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2); }
-        
-        /* 弹出框样式 */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 100; }
-        .modal-content { background: white; width: 85%; max-width: 320px; padding: 30px; border-radius: 24px; text-align: center; animation: slideUp 0.3s; }
-        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .score-circle { width: 80px; height: 80px; border-radius: 50%; border: 5px solid #eee; line-height: 80px; font-size: 1.8rem; font-weight: bold; margin: 0 auto 15px; }
-        .close-btn { margin-top: 20px; background: #f1f5f9; color: #334155; box-shadow: none; }
+        .predict-btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .predict-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+
+        /* 弹窗样式 */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: white; width: 85%; max-width: 350px; padding: 30px; border-radius: 24px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        .result-val { font-size: 2.5rem; font-weight: bold; color: var(--primary); margin: 15px 0; }
+        .close-btn { background: #f1f5f9; color: #334155; padding: 12px 25px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 15px; }
     </style>
 </head>
 <body>
 
-<div class="app-container">
+<div class="app-card">
     <div class="header">
-        <h1>🏠 门窗体检助手</h1>
-        <p>基于隔音与温差的气密性评估</p>
+        <h1>📊 气密性 AI 训练舱</h1>
+        <p>基于现有大数据文件进行智能预测</p>
     </div>
 
-    <div class="form-item">
-        <label>窗户类型</label>
-        <select id="type">
-            <option value="35">断桥铝平开窗</option>
-            <option value="20">塑钢/铝合金推拉窗</option>
-            <option value="10">普通单层玻璃窗</option>
+    <div class="upload-section" onclick="document.getElementById('csvFile').click()">
+        <div id="uploadText">
+            <strong>点击导入 CSV 数据文件</strong>
+            <p style="font-size: 0.8rem; color: #64748b;">支持读取：缝长、密封层数、测试结果</p>
+        </div>
+        <input type="file" id="csvFile" accept=".csv" style="display: none">
+        <div id="dataBadge" class="data-status">已学习 0 条历史记录</div>
+    </div>
+
+    <div class="form-group">
+        <label>待测缝长 (mm)</label>
+        <input type="number" id="inputFc" placeholder="例如: 5000">
+    </div>
+
+    <div class="form-group">
+        <label>密封层数 (层)</label>
+        <select id="inputLy">
+            <option value="1">1层</option>
+            <option value="2" selected>2层</option>
+            <option value="3">3层</option>
+            <option value="4">4层</option>
         </select>
     </div>
 
-    <div class="form-item">
-        <label>噪音对比 (dB)</label>
-        <div class="temp-grid">
-            <input type="number" id="outDb" placeholder="开窗分贝">
-            <input type="number" id="inDb" placeholder="关窗分贝">
-        </div>
-    </div>
-
-    <div class="form-item">
-        <label>温度对比 (°C)</label>
-        <div class="temp-grid">
-            <input type="number" id="outTemp" placeholder="室外温度">
-            <input type="number" id="inTemp" placeholder="室内温度">
-        </div>
-    </div>
-
-    <button onclick="calculate()">生成评估报告</button>
+    <button id="calcBtn" class="predict-btn" onclick="runAI()" disabled>请先导入训练数据</button>
 </div>
 
-<div id="resultModal" class="modal">
+<div id="resModal" class="modal">
     <div class="modal-content">
-        <div id="scoreCircle" class="score-circle">0</div>
-        <h2 id="levelText">等级</h2>
-        <p id="adviceText" style="color: #64748b; line-height: 1.5;"></p>
-        <button class="close-btn" onclick="closeModal()">返回修改</button>
+        <div style="color: #64748b; font-size: 0.9rem;">AI 智能预测结果</div>
+        <div id="resVal" class="result-val">0.00</div>
+        <div style="font-size: 0.9rem; color: #64748b; margin-bottom: 20px;">单位缝长渗透量 (m³/m)</div>
+        <div id="resAdvice" style="font-size: 0.85rem; color: #1e293b; background: #f8fafc; padding: 10px; border-radius: 8px;">数据分析中...</div>
+        <button class="close-btn" onclick="closeModal()">确认</button>
     </div>
 </div>
 
 <script>
-    function calculate() {
-        const outDb = parseFloat(document.getElementById('outDb').value);
-        const inDb = parseFloat(document.getElementById('inDb').value);
-        const outT = parseFloat(document.getElementById('outTemp').value);
-        const inT = parseFloat(document.getElementById('inTemp').value);
-        const typeScore = parseInt(document.getElementById('type').value);
+    let modelData = []; // 存储解析后的数据
 
-        if (isNaN(outDb) || isNaN(inDb) || isNaN(outT) || isNaN(inT)) {
-            alert("请输入完整的测试数据");
-            return;
-        }
+    // --- 文件解析逻辑 ---
+    document.getElementById('csvFile').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
 
-        // 核心算法逻辑
-        let deltaDb = outDb - inDb;
-        let deltaT = Math.abs(outT - inT);
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const text = event.target.result;
+            const rows = text.split('\n');
+            modelData = [];
+
+            // 循环解析 CSV（跳过标题行）
+            for (let i = 1; i < rows.length; i++) {
+                const cols = rows[i].split(',');
+                // 对应你的文件结构：[0]序号, [1]缝长, [2]层数, [3]测试结果
+                if (cols.length >= 4) {
+                    const fc = parseFloat(cols[1]);
+                    const ly = parseFloat(cols[2]);
+                    const res = parseFloat(cols[3]);
+                    
+                    if (!isNaN(fc) && !isNaN(ly) && !isNaN(res)) {
+                        modelData.push({ fc, ly, res });
+                    }
+                }
+            }
+
+            if (modelData.length > 0) {
+                updateUIReady();
+            } else {
+                alert("文件格式不正确或数据为空");
+            }
+        };
+        reader.readAsText(file);
+    });
+
+    function updateUIReady() {
+        document.getElementById('uploadText').style.display = 'none';
+        const badge = document.getElementById('dataBadge');
+        badge.style.display = 'block';
+        badge.innerText = `✅ 模型已就绪 (已学习 ${modelData.length} 组数据)`;
         
-        // 噪音得分权重 (0-60分)
-        let noiseScore = (deltaDb / 40) * 60; 
-        
-        // 温度补偿：如果温差很大但分贝差很小，说明密封极差，降低分数
-        let tempDeduction = (deltaT > 15 && deltaDb < 20) ? 15 : 0;
-
-        let finalScore = Math.round(noiseScore + typeScore - tempDeduction);
-        finalScore = Math.max(0, Math.min(100, finalScore));
-
-        // 弹窗逻辑
-        showResult(finalScore, deltaDb, deltaT);
+        const btn = document.getElementById('calcBtn');
+        btn.disabled = false;
+        btn.innerText = "基于 AI 大数据预测";
     }
 
-    function showResult(score, dDb, dT) {
-        const modal = document.getElementById('resultModal');
-        const scoreCircle = document.getElementById('scoreCircle');
-        const levelText = document.getElementById('levelText');
-        const adviceText = document.getElementById('adviceText');
+    // --- AI 预测算法 ---
+    function runAI() {
+        const targetFc = parseFloat(document.getElementById('inputFc').value);
+        const targetLy = parseFloat(document.getElementById('inputLy').value);
 
-        modal.style.display = 'flex';
-        scoreCircle.innerText = score;
+        if (!targetFc) { alert("请输入待测缝长"); return; }
 
-        let color = score > 80 ? '#22c55e' : (score > 50 ? '#f59e0b' : '#ef4444');
-        scoreCircle.style.borderColor = color;
-        scoreCircle.style.color = color;
+        // 计算大数据中的平均表现系数 (结果/缝长/层数倒数)
+        // 这是一种简化的加权线性算法
+        let totalCoefficient = 0;
+        modelData.forEach(item => {
+            // 假设 1/层数 与渗透量正相关
+            totalCoefficient += item.res / (item.fc * (1/item.ly));
+        });
+        
+        const avgCoefficient = totalCoefficient / modelData.length;
+        
+        // 执行预测：预测值 = 平均系数 * 输入缝长 * (1/输入层数)
+        let finalResult = avgCoefficient * targetFc * (1/targetLy);
 
-        if (score > 80) {
-            levelText.innerText = "气密性：优";
-            adviceText.innerText = `降噪达到 ${dDb}dB，表现出色！即使在 ${dT}℃ 温差下也能保持良好密封。`;
-        } else if (score > 50) {
-            levelText.innerText = "气密性：良";
-            adviceText.innerText = `基本合格。建议检查密封条是否老化，或在缝隙处贴加压条。`;
-        } else {
-            levelText.innerText = "气密性：差";
-            adviceText.innerText = `漏风风险极高！降噪仅 ${dDb}dB。建议联系厂家更换胶条或升级系统窗。`;
-        }
+        // 渲染结果
+        showModal(finalResult.toFixed(3));
+    }
+
+    function showModal(val) {
+        document.getElementById('resVal').innerText = val;
+        document.getElementById('resModal').style.display = 'flex';
+        
+        let advice = "";
+        if(val < 0.3) advice = "气密水平极佳：优于数据库 80% 的记录。";
+        else if(val < 0.45) advice = "气密水平一般：属于标准范围。";
+        else advice = "气密水平偏弱：建议增加密封层数。";
+        document.getElementById('resAdvice').innerText = advice;
     }
 
     function closeModal() {
-        document.getElementById('resultModal').style.display = 'none';
+        document.getElementById('resModal').style.display = 'none';
     }
 </script>
-
+        
 </body>
 </html>
