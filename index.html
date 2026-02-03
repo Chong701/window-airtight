@@ -3,24 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>气密性自适应建模 v2.1</title>
+    <title>气密性 AI 建模 (支持中文版)</title>
     <style>
         :root { --primary: #2563eb; --bg: #f8fafc; --text: #1e293b; }
         body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); padding: 20px; display: flex; justify-content: center; color: var(--text); }
         .app-card { background: white; width: 100%; max-width: 500px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding: 30px; }
         .header { text-align: center; margin-bottom: 25px; }
-        
         .upload-box { border: 2px dashed #cbd5e1; background: #f1f5f9; padding: 30px; border-radius: 15px; text-align: center; cursor: pointer; margin-bottom: 20px; }
         .upload-box:hover { border-color: var(--primary); background: #eff6ff; }
-        
         #dynamicForm { margin-top: 20px; padding-top: 20px; border-top: 2px solid #f1f5f9; display: none; }
         .form-item { margin-bottom: 15px; }
         label { display: block; font-size: 0.85rem; font-weight: 600; color: #64748b; margin-bottom: 6px; }
         input { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 1rem; box-sizing: border-box; }
-        
         .btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 1rem; }
         .data-info { font-size: 0.75rem; background: #ecfdf5; color: #065f46; padding: 12px; border-radius: 8px; margin-bottom: 15px; display: none; line-height: 1.4; }
-
         .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; backdrop-filter: blur(4px); }
         .modal-content { background:white; padding:30px; border-radius:24px; width:85%; max-width:320px; text-align:center; }
         .close-btn { background: #f1f5f9; color: var(--text); border: none; padding: 12px 30px; border-radius: 10px; margin-top: 20px; cursor: pointer; font-weight: bold; }
@@ -31,18 +27,18 @@
 <div class="app-card">
     <div class="header">
         <h1>🧠 气密性 AI 建模</h1>
-        <p>自动识别参数，隔离测试结果</p>
+        <p>支持中文 CSV 数据导入</p>
     </div>
 
     <div class="upload-box" onclick="document.getElementById('fileIn').click()">
-        <div id="status">点击上传 CSV 数据文件</div>
+        <div id="status">点击上传 CSV (支持中文)</div>
         <input type="file" id="fileIn" accept=".csv" style="display:none">
     </div>
 
     <div id="dataTag" class="data-info"></div>
 
     <div id="dynamicForm">
-        <h3 style="font-size: 1rem; margin-bottom: 15px;">输入预测参数</h3>
+        <h3 style="font-size: 1rem; margin-bottom: 15px;">输入待预测参数</h3>
         <div id="inputsContainer"></div>
         <button class="btn" onclick="predict()">基于大数据精准预测</button>
     </div>
@@ -65,24 +61,37 @@
         const file = e.target.files[0];
         const reader = new FileReader();
         
+        // --- 解决乱码的核心：以 ArrayBuffer 方式读取 ---
+        reader.readAsArrayBuffer(file);
+        
         reader.onload = function(event) {
-            const text = event.target.result;
-            // 修正：清洗每一行，去除不可见字符
+            const buffer = event.target.result;
+            
+            // 尝试用 UTF-8 解码
+            let decoder = new TextDecoder('utf-8');
+            let text = decoder.decode(new Uint8Array(buffer));
+            
+            // 检查是否包含乱码特征（如果解码失败通常会出现特殊符号）
+            // 或者直接尝试 GBK 解码（因为 Excel 默认导出 GBK）
+            if (text.includes('')) {
+                decoder = new TextDecoder('gbk');
+                text = decoder.decode(new Uint8Array(buffer));
+            }
+
             const allLines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
             
             if (allLines.length < 2) { alert("文件数据不足"); return; }
 
-            // 1. 解析表头并严格清洗
+            // 解析表头
             headers = allLines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
             
-            // 2. 解析数值数据
+            // 解析数据
             csvRows = allLines.slice(1).map(row => {
-                return row.split(',').map(v => parseFloat(v.trim()));
+                return row.split(',').map(v => v.trim()); // 先保留字符串，计算时转数字
             });
 
             generateForm();
         };
-        reader.readAsText(file);
     });
 
     function generateForm() {
@@ -90,9 +99,7 @@
         const tag = document.getElementById('dataTag');
         container.innerHTML = ''; 
         
-        // 关键逻辑：
-        // 假设 CSV 结构为：[序号, 参数1, 参数2, ..., 结果]
-        // 我们只为索引从 1 到 headers.length - 2 的列创建输入框
+        // 自动识别：跳过第一列(序号)，跳过最后一列(结果)
         const startIndex = 1;
         const endIndex = headers.length - 2;
 
@@ -106,16 +113,9 @@
             container.appendChild(div);
         }
 
-        // 提示信息
         const targetName = headers[headers.length - 1];
-        const paramNames = headers.slice(startIndex, endIndex + 1).join('、');
-        
         tag.style.display = 'block';
-        tag.innerHTML = `
-            <b>✅ 数据解析成功</b><br>
-            <b>特征参数：</b>${paramNames}<br>
-            <b>预测目标：</b>${targetName} (已自动隔离)
-        `;
+        tag.innerHTML = `<b>✅ 数据解析成功</b><br>预测目标：${targetName}`;
         
         document.getElementById('dynamicForm').style.display = 'block';
         document.getElementById('status').innerText = "文件已加载";
@@ -132,27 +132,27 @@
             userInputs[idx] = val;
         }
 
-        // 预测算法：加权相似度
         let totalWeightedResult = 0;
         let totalSimilarity = 0;
 
         csvRows.forEach(row => {
             let diffSum = 0;
-            // 仅使用参数列计算“距离”
             for (let idx in userInputs) {
-                const diff = (row[idx] - userInputs[idx]) / (userInputs[idx] || 1);
+                const rowVal = parseFloat(row[idx]);
+                const diff = (rowVal - userInputs[idx]) / (userInputs[idx] || 1);
                 diffSum += Math.pow(diff, 2);
             }
             
             let similarity = 1 / (Math.sqrt(diffSum) + 0.0001); 
+            const targetVal = parseFloat(row[row.length - 1]);
             
-            // 结果只取最后一列
-            totalWeightedResult += row[row.length - 1] * similarity;
-            totalSimilarity += similarity;
+            if(!isNaN(targetVal)) {
+                totalWeightedResult += targetVal * similarity;
+                totalSimilarity += similarity;
+            }
         });
 
         const finalVal = (totalWeightedResult / totalSimilarity).toFixed(4);
-        
         document.getElementById('resVal').innerText = finalVal;
         document.getElementById('resTargetLabel').innerText = headers[headers.length - 1];
         document.getElementById('resModal').style.display = 'flex';
