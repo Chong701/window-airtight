@@ -3,61 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>气密性自适应AI建模工具</title>
+    <title>气密性自适应AI建模工具 v2.0</title>
     <style>
-        :root { --primary: #2563eb; --bg: #f8fafc; }
-        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); padding: 20px; display: flex; justify-content: center; }
+        :root { --primary: #2563eb; --bg: #f8fafc; --text: #1e293b; }
+        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); padding: 20px; display: flex; justify-content: center; color: var(--text); }
         .app-card { background: white; width: 100%; max-width: 500px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding: 30px; }
         .header { text-align: center; margin-bottom: 25px; }
         
-        /* 动态导入区 */
-        .upload-box { border: 2px dashed #cbd5e1; background: #f1f5f9; padding: 30px; border-radius: 15px; text-align: center; cursor: pointer; margin-bottom: 20px; }
+        .upload-box { border: 2px dashed #cbd5e1; background: #f1f5f9; padding: 30px; border-radius: 15px; text-align: center; cursor: pointer; margin-bottom: 20px; transition: 0.3s; }
         .upload-box:hover { border-color: var(--primary); background: #eff6ff; }
         
-        /* 动态生成的输入框容器 */
-        #dynamicForm { margin-top: 20px; padding: 15px; border-top: 1px solid #eee; display: none; }
+        #dynamicForm { margin-top: 20px; padding-top: 20px; border-top: 2px solid #f1f5f9; display: none; }
         .form-item { margin-bottom: 15px; }
-        label { display: block; font-size: 0.9rem; font-weight: 600; color: #475569; margin-bottom: 5px; }
-        input { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; box-sizing: border-box; }
+        label { display: block; font-size: 0.85rem; font-weight: 600; color: #64748b; margin-bottom: 6px; }
+        input { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 1rem; box-sizing: border-box; transition: 0.2s; }
+        input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
         
-        .btn { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .btn:disabled { background: #cbd5e1; }
-        
-        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; }
-        .modal-content { background:white; padding:30px; border-radius:20px; width:80%; max-width:300px; text-align:center; }
+        .btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 1rem; }
+        .data-info { font-size: 0.75rem; background: #fdf2f2; color: #991b1b; padding: 10px; border-radius: 8px; margin-bottom: 15px; display: none; }
+
+        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; backdrop-filter: blur(4px); }
+        .modal-content { background:white; padding:30px; border-radius:24px; width:85%; max-width:320px; text-align:center; animation: pop 0.3s ease; }
+        @keyframes pop { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .close-btn { background: #f1f5f9; color: var(--text); border: none; padding: 12px 30px; border-radius: 10px; margin-top: 20px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="app-card">
     <div class="header">
-        <h1>🧠 自适应大数据模型</h1>
-        <p>自动识别文件列数并生成预测表单</p>
+        <h1>🧠 气密性 AI 建模</h1>
+        <p>自动分离参数与结果进行智能预测</p>
     </div>
 
     <div class="upload-box" onclick="document.getElementById('fileIn').click()">
-        <div id="status">点击上传 CSV 文件</div>
+        <div id="status">点击上传 airtightdata.csv</div>
         <input type="file" id="fileIn" accept=".csv" style="display:none">
     </div>
 
+    <div id="dataTag" class="data-info"></div>
+
     <div id="dynamicForm">
-        <h3 style="font-size: 1rem; color: #1e293b;">输入预测参数</h3>
+        <h3 style="font-size: 1rem; margin-bottom: 15px;">输入待预测参数</h3>
         <div id="inputsContainer"></div>
-        <button class="btn" onclick="predict()">基于学习结果预测结果</button>
+        <button class="btn" onclick="predict()">基于大数据精准预测</button>
     </div>
 </div>
 
 <div id="resModal" class="modal">
     <div class="modal-content">
-        <h2 style="color:var(--primary)" id="resTitle">预测结果</h2>
-        <div id="resVal" style="font-size: 2rem; font-weight: bold;">0.00</div>
-        <button class="btn" style="background:#f1f5f9; color:#334155;" onclick="closeModal()">确定</button>
+        <div style="font-size: 0.9rem; color: #64748b;">预测目标：单位缝长渗透量</div>
+        <div id="resVal" style="font-size: 2.5rem; font-weight: bold; color: var(--primary); margin: 15px 0;">0.00</div>
+        <div style="font-size: 0.8rem; color: #94a3b8;" id="resLabelName">结果单位：m³/m</div>
+        <button class="close-btn" onclick="closeModal()">返回</button>
     </div>
 </div>
 
 <script>
     let headers = [];
     let csvRows = [];
+    let targetLabel = "";
 
     document.getElementById('fileIn').addEventListener('change', function(e) {
         const file = e.target.files[0];
@@ -67,13 +72,14 @@
             const text = event.target.result;
             const allLines = text.split('\n').filter(l => l.trim() !== '');
             
-            // 1. 获取表头 (排除第一列序号)
+            // 1. 解析表头
             headers = allLines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+            targetLabel = headers[headers.length - 1]; // 锁定最后一列为目标
             
-            // 2. 获取数据内容
+            // 2. 解析数值
             csvRows = allLines.slice(1).map(row => row.split(',').map(v => parseFloat(v)));
 
-            // 3. 动态生成界面
+            // 3. 生成表单
             generateForm();
         };
         reader.readAsText(file);
@@ -81,55 +87,65 @@
 
     function generateForm() {
         const container = document.getElementById('inputsContainer');
-        container.innerHTML = ''; // 清空旧表单
+        const tag = document.getElementById('dataTag');
+        container.innerHTML = ''; 
         
-        // 我们假设：第一列是序号(忽略)，最后一列是结果(忽略)，中间全是参数
-        // 比如你的文件：[0]序号, [1]缝长, [2]层数, [3]测试结果
+        // 只循环中间的参数列：排除第0列(序号)和最后一列(测试结果)
         for (let i = 1; i < headers.length - 1; i++) {
             const div = document.createElement('div');
             div.className = 'form-item';
             div.innerHTML = `
-                <label>${headers[i]}</label>
-                <input type="number" class="dynamic-input" data-index="${i}" placeholder="请输入${headers[i]}">
+                <label>参数：${headers[i]}</label>
+                <input type="number" class="dynamic-input" data-index="${i}" step="0.01" placeholder="请输入数值">
             `;
             container.appendChild(div);
         }
 
+        // UI反馈
+        tag.style.display = 'block';
+        tag.style.background = '#ecfdf5';
+        tag.style.color = '#065f46';
+        tag.innerText = `✅ 已识别：${headers.length - 2}个特征参数，预测目标：${targetLabel}`;
+        
         document.getElementById('dynamicForm').style.display = 'block';
-        document.getElementById('status').innerText = `已成功识别 ${headers.length - 2} 个维度数据`;
-        document.getElementById('status').style.color = '#10b981';
+        document.getElementById('status').innerText = "数据更新成功";
     }
 
     function predict() {
         const inputs = document.getElementsByClassName('dynamic-input');
         let userInputs = {};
         
-        // 收集用户输入的参数
         for (let input of inputs) {
             const idx = input.getAttribute('data-index');
-            userInputs[idx] = parseFloat(input.value);
-            if (isNaN(userInputs[idx])) { alert("请填写完整参数"); return; }
+            const val = parseFloat(input.value);
+            if (isNaN(val)) { alert("请填写完整参数"); return; }
+            userInputs[idx] = val;
         }
 
-        // --- 多维线性回归预测模拟 ---
-        // 逻辑：计算每个维度相对于结果的贡献权重
-        let prediction = 0;
-        let totalWeights = 0;
+        // --- 核心预测算法：加权临近算法 (KNN 思想) ---
+        let totalWeightedResult = 0;
+        let totalSimilarity = 0;
 
         csvRows.forEach(row => {
-            let rowWeight = 0;
-            // 简单的比例相关性计算
+            let distanceSquare = 0;
+            // 只对比中间的特征列
             for (let idx in userInputs) {
-                // 如果用户输入的值接近历史记录中的值，则该历史结果参考价值更高
-                rowWeight += 1 / (Math.abs(row[idx] - userInputs[idx]) + 1);
+                // 归一化模拟：计算输入值与历史值的偏差
+                distanceSquare += Math.pow((row[idx] - userInputs[idx]) / userInputs[idx], 2);
             }
-            prediction += row[row.length - 1] * rowWeight;
-            totalWeights += rowWeight;
+            
+            // 计算相似度（距离越小，相似度越高）
+            let similarity = 1 / (Math.sqrt(distanceSquare) + 0.01); 
+            
+            // 累加：历史结果 * 相似度权重
+            totalWeightedResult += row[row.length - 1] * similarity;
+            totalSimilarity += similarity;
         });
 
-        const finalVal = (prediction / totalWeights).toFixed(4);
+        const finalVal = (totalWeightedResult / totalSimilarity).toFixed(4);
         
         document.getElementById('resVal').innerText = finalVal;
+        document.getElementById('resLabelName').innerText = `结果基于：${targetLabel}`;
         document.getElementById('resModal').style.display = 'flex';
     }
 
